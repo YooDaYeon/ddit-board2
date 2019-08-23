@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="boardwrite">
+
+	<!-- 게시글 리스트  -->
+	<select id="bwList" parameterType="int" resultType="boardWriteVO">
+		select *
+		from board_write
+		where boardId=#{boardId}
+	</select>
+	
+	<!-- 게시글 페이지 리스트 조회 -->
+	<select id="bwPagingList" parameterType="map" resultType="boardWriteVO">
+		 <![CDATA[
+		  select b.* 
+			 from 
+			 (SELECT A.*, ROWNUM RN 
+			 	FROM
+					(SELECT BOARD.*, LPAD(' ', (LEVEL-1)*4) || BOARD.title, LEVEL LV
+				    FROM BOARD_WRITE BOARD 
+				    WHERE BOARDID = #{boardId}
+				    START WITH PARENTid
+				    IS NULL CONNECT BY PRIOR WRITEID = PARENTid
+				    ORDER SIBLINGS BY GROUPSEQ , WRITEID)a)b
+			  where rn >= (#{page}-1)*#{pageSize}+1 and rn <= #{page}*#{pageSize} 
+			  
+		
+		 ]]> 
+	</select>
+<!-- 			 select b.*  -->
+<!-- 			 from  -->
+<!-- 			 (select a.*, rownum rn  -->
+<!-- 			 from  -->
+<!-- 			 (select a.*  -->
+<!-- 			  from board_write a -->
+<!-- 			  where boardid = #{boardId}  -->
+<!-- 			  ) a)b -->
+<!-- 			  where rn >= (#{page}-1)*#{pageSize}+1 and rn <= #{page}*#{pageSize}  -->
+	
+	
+	<!-- 게시글 전체수 조회 -->
+	<select id="bwCnt"  parameterType="int" resultType="int">
+		select count(*)
+		from board_write
+		where boardId = #{boardId}
+		
+	</select>
+	
+	<!--게시글 신규 등록 -->
+	<insert id="bwInsert" parameterType="boardWriteVO">
+		insert into board_write values(board_write_seq.nextval, #{boardId},#{userId},
+									   null,#{title},#{writeContent},sysdate,'사용',0 )
+	</insert>
+	
+	<!-- 게시글 답글 등록 -->
+	<insert id="bwReply" parameterType="boardWriteVO">
+		insert into board_write values(board_write_seq.nextval, #{boardId},#{userId},
+									   #{parentId},#{title},#{writeContent},sysdate,'사용',groupseq.nextval )
+		
+	</insert>
+	
+	
+	<!--그룹 시퀀스 값 수정 -->
+	<update id="updategroupseq" parameterType="int">
+		update board_write
+		set groupseq = groupseq.currval
+		where writeid = #{writeId}
+	</update>
+	
+	<!--게시글 수정 -->
+	<update id="bwRevice" parameterType="boardWriteVO">
+		update board_write
+		set title = #{title},
+			writeContent = #{writeContent},
+			writedate = sysdate
+		where writeId = #{writeId}
+		
+	</update>
+
+	<!--게시글 삭제(수정) -->
+	<update id="bwDelete" parameterType="int">
+		update board_write
+		set writeUseYn = '미사용'
+		where writeId = #{writeId}
+		
+	</update>
+
+	<!-- 게시글 상세보기 -->
+	<select id="bwDetail" parameterType="int" resultType="boardWriteVO">
+		select *
+		from board_write
+		where writeId = #{writeId}
+		  
+	</select>
+	
+	<!-- 최근 등록한 시퀀스 -->
+	<select id="maxWriteId" resultType="int">
+		select max(writeid)
+		from board_write
+	</select>
+	
+	
+	
+
+	
+</mapper>
